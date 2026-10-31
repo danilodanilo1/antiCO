@@ -4,7 +4,7 @@ import { join } from "node:path";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { CamaraClient } from "../src/services/camara/client.js";
 import { despesasCeapLocal } from "../src/services/camara/ceap-arquivo.js";
-import { CamaraSource, anosLegislaturaAtual } from "../src/services/sources/camara.source.js";
+import { CamaraSource, anosLegislaturaAtual, legislaturaDoAno } from "../src/services/sources/camara.source.js";
 import { HttpError, erroTemporario, withRetry } from "../src/utils/retry.js";
 import type { Politico } from "../src/types/politico.js";
 
@@ -164,6 +164,29 @@ describe("CamaraSource.buscarDespesas com API vazia", () => {
   it("API vazia e sem arquivo: resultado vazio, sem aviso", async () => {
     const r = await new CamaraSource(clientVazio, dataDir).buscarDespesas(politico, 2019);
     expect(r).toEqual({ despesas: [], avisos: [] });
+  });
+});
+
+describe("parâmetros da API de despesas", () => {
+  it("legislaturaDoAno", () => {
+    expect(legislaturaDoAno(2019)).toBe(56);
+    expect(legislaturaDoAno(2022)).toBe(56);
+    expect(legislaturaDoAno(2023)).toBe(57);
+    expect(legislaturaDoAno(2026)).toBe(57);
+    expect(legislaturaDoAno(2027)).toBe(58);
+  });
+
+  it("envia idLegislatura junto com ano (sem ele a API devolve lista vazia)", async () => {
+    const chamadas: Array<Record<string, string | number> | undefined> = [];
+    const client = {
+      getAllPages: async (_p: string, params?: Record<string, string | number>) => {
+        chamadas.push(params);
+        return [];
+      },
+    } as unknown as CamaraClient;
+    const politico = { id: "camara:209787", nome: "X", siglaPartido: "", siglaUf: "", cargo: "deputado_federal", fonte: "camara" } as Politico;
+    await new CamaraSource(client, mkdtempSync(join(tmpdir(), "antico-"))).buscarDespesas(politico, 2026);
+    expect(chamadas[0]).toEqual({ idLegislatura: 57, ano: 2026 });
   });
 });
 

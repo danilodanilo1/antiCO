@@ -97,7 +97,8 @@ export class CamaraSource implements PoliticoSource {
     ]);
 
     const map = new Map<string, Politico>();
-    for (const p of [...indexResults, ...apiResults]) {
+    // A API traz partido e UF; o índice local não. Quando os dois têm o mesmo deputado, fica o da API.
+    for (const p of [...apiResults, ...indexResults]) {
       if (!map.has(p.id)) map.set(p.id, p);
     }
     return Array.from(map.values());
@@ -121,7 +122,11 @@ export class CamaraSource implements PoliticoSource {
 
     for (const a of anos) {
       try {
-        const raw = await this.client.getAllPages<DespesaApi>(`/deputados/${deputadoId}/despesas`, { ano: a });
+        // A API passou a devolver lista vazia quando só recebe `ano`; com idLegislatura volta normal.
+        const raw = await this.client.getAllPages<DespesaApi>(`/deputados/${deputadoId}/despesas`, {
+          idLegislatura: legislaturaDoAno(a),
+          ano: a,
+        });
         if (raw.length === 0) {
           // Sob carga a API às vezes responde 200 com lista vazia. Confere no arquivo da cota.
           const local = await this.carregarLocal(deputadoId, a);
@@ -167,6 +172,11 @@ export class CamaraSource implements PoliticoSource {
       return null;
     }
   }
+}
+
+/** Número da legislatura de um ano (56ª: 2019–2022, 57ª: 2023–2026). */
+export function legislaturaDoAno(ano: number): number {
+  return 56 + Math.floor((ano - 2019) / 4);
 }
 
 /** Anos da legislatura em curso até o ano atual (57ª: 2023–2026). */
