@@ -1195,3 +1195,22 @@ body::before {
     grid-template-columns: 1fr;
   }
 }
+
+/* Categoria e fonte de cada sinal */
+.sinal-categoria {
+  font-size: 0.72rem;
+  font-weight: 600;
+  padding: 0.1rem 0.5rem;
+  border-radius: 999px;
+  margin-left: auto;
+}
+.sinal-categoria-fato { background: #fde2e1; color: #9b1c1c; }
+.sinal-categoria-indicio { background: #fff4d6; color: #8a5a00; }
+.sinal-categoria-contexto { background: #eceff3; color: #4b5563; }
+.sinal-fonte { font-size: 0.8rem; color: #6b7280; margin: 0.35rem 0 0; }
+.sinal-fonte a { color: inherit; text-decoration: underline; }
+.aviso-indicios {
+  font-size: 0.85rem;
+  color: #6b7280;
+  margin: 0.25rem 0 0.75rem;
+}

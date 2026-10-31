@@ -53,3 +53,14 @@ export function classificacaoColor(c: string): string {
       return "baixo";
   }
 }
+
+export function categoriaLabel(categoria?: string): string {
+  switch (categoria) {
+    case "FATO":
+      return "Fato oficial";
+    case "INDICIO":
+      return "Indício";
+    default:
+      return "Contexto";
+  }
+}

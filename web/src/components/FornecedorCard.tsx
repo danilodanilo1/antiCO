@@ -24,7 +24,9 @@ export function FornecedorCard({ item, rank, onInvestigarEmpresa }: Props) {
           <span className="fornecedor-cnpj">{formatCnpj(f.cnpjCpf)}</span>
         </div>
         <div className="fornecedor-score">
-          <span className={`badge badge-${cls}`}>{item.classificacao}</span>
+          <span className={`badge badge-${cls}`} title="Indícios a verificar, não prova de ilícito">
+            {item.classificacao}
+          </span>
           <span className="score-num">{item.score.toFixed(2)}</span>
         </div>
         <div className="fornecedor-chevron">{expanded ? "▲" : "▼"}</div>

@@ -11,8 +11,11 @@ export interface CnpjData {
   nomeFantasia?: string;
   situacaoCadastral: string;
   dataSituacaoCadastral?: string;
+  /** Data de abertura (AAAA-MM-DD). */
+  dataInicioAtividade?: string;
   cnaeFiscal?: number;
   cnaeFiscalDescricao?: string;
+  cnaesSecundarios?: number[];
   logradouro?: string;
   numero?: string;
   complemento?: string;

@@ -5,3 +5,5 @@ data/snapshots/
 data/reports/
 .env
 *.log
+dist-ui/
+data/gabinete/

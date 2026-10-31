@@ -1,17 +1,21 @@
 {
   "name": "antico",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "Sistema de auditoria cívica OSINT — investigação de despesas parlamentares",
   "type": "module",
   "scripts": {
     "investigar": "tsx scripts/investigar.ts",
+    "coletar:gabinete": "tsx scripts/coletar-gabinete.ts",
     "api": "tsx watch src/server/index.ts",
     "ui": "vite --config web/vite.config.ts",
     "dev": "concurrently -n api,ui -c blue,green \"npm run api\" \"npm run ui\"",
     "build": "tsc",
+    "start": "node dist/src/server/index.js",
     "build:ui": "vite build --config web/vite.config.ts",
     "typecheck": "tsc --noEmit",
-    "postinstall": "npx playwright install chromium || true"
+    "postinstall": "npx playwright install chromium || true",
+    "test": "vitest run",
+    "test:watch": "vitest"
   },
   "engines": {
     "node": ">=18"
@@ -35,6 +39,7 @@
     "concurrently": "^9.1.2",
     "tsx": "^4.19.2",
     "typescript": "^5.7.2",
-    "vite": "^6.0.3"
+    "vite": "^6.0.3",
+    "vitest": "^3.2.7"
   }
 }

@@ -20,7 +20,9 @@ function gerarMarkdown(dossie: InvestigacaoEmpresa): string {
     `# Dossiê Empresa — ${formatCnpj(dossie.cnpj)}`,
     "",
     `**Gerado em:** ${new Date(dossie.geradoEm).toLocaleString("pt-BR")}`,
-    `**Score de risco:** ${dossie.score} (${dossie.classificacao})`,
+    "> Indícios para investigação a partir de dados públicos. Não constitui prova de ilícito. Confira cada fonte antes de qualquer conclusão.",
+    "",
+    `**Classificação:** ${dossie.classificacao} (score ${dossie.score})`,
     `**Plausibilidade operacional:** ${dossie.plausibilidade.classificacao}`,
     "",
   ];
@@ -52,7 +54,9 @@ function gerarMarkdown(dossie: InvestigacaoEmpresa): string {
     lines.push("## Sócios", "");
     for (const s of dossie.socios) {
       lines.push(`- **${s.nome}** — ${s.qualificacao}`);
-      if (s.vinculosPoliticos.length) lines.push(`  - Vínculos: ${s.vinculosPoliticos.join("; ")}`);
+      for (const v of s.vinculosPoliticos) {
+        lines.push(`  - Mesmo nome completo de servidor(a) do gabinete de ${v.parlamentar}${v.cargo ? ` (${v.cargo}` : ""}${v.periodo ? `, ${v.periodo})` : v.cargo ? ")" : ""}. Fonte: ${v.url ? `[${v.fonte}](${v.url})` : v.fonte}`);
+      }
       if (s.outrasEmpresas.length) lines.push(`  - Outras empresas: ${s.outrasEmpresas.join("; ")}`);
     }
     lines.push("");
@@ -60,7 +64,8 @@ function gerarMarkdown(dossie: InvestigacaoEmpresa): string {
 
   lines.push("## Sinais de risco", "");
   for (const s of dossie.sinais) {
-    lines.push(`- **${s.tipo}** (${Math.round(s.confianca * 100)}%): ${s.descricao}`);
+    const fonte = s.fonte ? ` Fonte: ${s.url ? `[${s.fonte}](${s.url})` : s.fonte}.` : "";
+    lines.push(`- **${s.tipo}** [${s.categoria ?? "CONTEXTO"}]: ${s.descricao}${s.evidencia ? ` (${s.evidencia})` : ""}.${fonte}`);
   }
   lines.push("");
 

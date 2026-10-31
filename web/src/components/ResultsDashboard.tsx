@@ -61,9 +61,13 @@ export function ResultsDashboard({ result, onInvestigarEmpresa }: Props) {
 
       {criticos.length > 0 && (
         <div className="alert-strip">
-          <strong>{criticos.length} fornecedor(es)</strong> com score alto ou crítico — revisar prioritariamente.
+          <strong>{criticos.length} fornecedor(es)</strong> com indícios altos ou críticos. Revisar as fontes de cada sinal antes de qualquer conclusão.
         </div>
       )}
+      <p className="aviso-indicios">
+        Classificação por regras: CRÍTICO exige 1 fato oficial e 2 indícios; ALTO, 1 fato ou 3 indícios. Sinais de contexto não pontuam.
+        Indícios não constituem prova de ilícito.
+      </p>
 
       {fornecedores.length === 0 ? (
         <div className="no-results">

@@ -9,8 +9,10 @@ interface CnpjApiResponse {
   nome_fantasia?: string;
   descricao_situacao_cadastral?: string;
   data_situacao_cadastral?: string;
+  data_inicio_atividade?: string;
   cnae_fiscal?: number;
   cnae_fiscal_descricao?: string;
+  cnaes_secundarios?: Array<{ codigo: number; descricao?: string }>;
   logradouro?: string;
   numero?: string;
   complemento?: string;
@@ -95,8 +97,10 @@ export class CnpjService {
       nomeFantasia: data.nome_fantasia,
       situacaoCadastral: data.descricao_situacao_cadastral ?? "DESCONHECIDA",
       dataSituacaoCadastral: data.data_situacao_cadastral,
+      dataInicioAtividade: data.data_inicio_atividade,
       cnaeFiscal: data.cnae_fiscal,
       cnaeFiscalDescricao: data.cnae_fiscal_descricao,
+      cnaesSecundarios: (data.cnaes_secundarios ?? []).map((c) => c.codigo).filter((c) => c > 0),
       logradouro: data.logradouro,
       numero: data.numero,
       complemento: data.complemento,

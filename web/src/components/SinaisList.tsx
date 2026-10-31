@@ -1,5 +1,5 @@
 import type { SinalRisco } from "../api";
-import { formatPercent } from "../utils";
+import { categoriaLabel } from "../utils";
 
 interface Props {
   sinais: SinalRisco[];
@@ -56,7 +56,9 @@ export function SinaisList({ sinais, idPrefix = "sinal", showChips = true }: Pro
                 title="Ir para evidência"
               >
                 <code>{s.tipo}</code>
-                <span className="sinal-conf">{formatPercent(s.confianca)}</span>
+                <span className={`sinal-categoria sinal-categoria-${(s.categoria ?? "CONTEXTO").toLowerCase()}`}>
+                  {categoriaLabel(s.categoria)}
+                </span>
               </button>
               <p className="sinal-descricao">{s.descricao}</p>
               <div id={evidenciaId} className="sinal-evidencia-block" tabIndex={-1}>
@@ -65,6 +67,16 @@ export function SinaisList({ sinais, idPrefix = "sinal", showChips = true }: Pro
                   <p className="sinal-evidencia-texto">{s.evidencia}</p>
                 ) : (
                   <p className="sinal-evidencia-texto sinal-evidencia-inferida">{s.descricao}</p>
+                )}
+                {s.fonte && (
+                  <p className="sinal-fonte">
+                    Fonte:{" "}
+                    {s.url ? (
+                      <a href={s.url} target="_blank" rel="noreferrer noopener">{s.fonte}</a>
+                    ) : (
+                      s.fonte
+                    )}
+                  </p>
                 )}
               </div>
             </li>

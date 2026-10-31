@@ -4,11 +4,12 @@ import AdmZip from "adm-zip";
 import { config } from "../../config/env.js";
 import type { FonteDados } from "../../types/politico.js";
 import type { PagadorPolitico } from "../../types/empresa.js";
-import { csvToObjects, parseValorBr } from "../../utils/csv.js";
+import { csvToObjects, parseDataBr, parseValorBr } from "../../utils/csv.js";
 import { normalizeCnpj, isCnpj, parseCnpjCeap, cnpjMatchesQuery } from "../../utils/cnpj.js";
 import { fetchText } from "../../utils/http.js";
 import { logger } from "../../utils/logger.js";
 import { normalizarNomePolitico } from "../shared/despesas-processor.js";
+import { anosCeap, anosCeaps, anosCeapDownload } from "./anos.js";
 
 interface PagadorEntry {
   nome: string;
@@ -19,6 +20,7 @@ interface PagadorEntry {
   quantidadeNotas: number;
   tiposDespesa: Set<string>;
   ultimaDespesa?: string;
+  primeiraDespesa?: string;
 }
 
 interface CnpjIndexData {
@@ -28,11 +30,20 @@ interface CnpjIndexData {
   index: Record<string, PagadorEntry[]>;
 }
 
-const INDEX_VERSION = 2;
+const INDEX_VERSION = 3;
 
-const ANOS_CEAPS = Array.from({ length: 18 }, (_, i) => 2009 + i);
-const ANOS_CEAP = Array.from({ length: 18 }, (_, i) => 2008 + i);
-const ANOS_CEAP_DOWNLOAD = Array.from({ length: 6 }, (_, i) => 2020 + i);
+const ANOS_CEAPS = anosCeaps();
+const ANOS_CEAP = anosCeap();
+const ANOS_CEAP_DOWNLOAD = anosCeapDownload();
+
+/** Converte "dd/mm/aaaa" ou ISO em "aaaa-mm-dd". */
+function dataIso(raw: string): string | undefined {
+  if (!raw) return undefined;
+  if (/^\d{4}-\d{2}-\d{2}/.test(raw)) return raw.slice(0, 10);
+  const br = parseDataBr(raw);
+  if (!br) return undefined;
+  return `${br.ano}-${String(br.mes).padStart(2, "0")}-${String(br.dia).padStart(2, "0")}`;
+}
 
 export class CnpjIndexService {
   private index: Map<string, PagadorEntry[]> | null = null;
@@ -41,13 +52,13 @@ export class CnpjIndexService {
     await this.carregar();
   }
 
-  async buscarPagadores(cnpj: string): Promise<PagadorPolitico[]> {
+  async buscarPagadores(cnpj: string, incluirFiliais = false): Promise<PagadorPolitico[]> {
     const idx = await this.carregar();
     const key = normalizeCnpj(cnpj);
     const merged = new Map<string, PagadorEntry>();
 
     for (const [indexedCnpj, entries] of idx) {
-      if (!cnpjMatchesQuery(key, indexedCnpj)) continue;
+      if (!cnpjMatchesQuery(key, indexedCnpj, incluirFiliais)) continue;
       for (const e of entries) {
         const mergeKey = `${e.fonte}:${normalizarNomePolitico(e.nome)}`;
         const existing = merged.get(mergeKey);
@@ -57,6 +68,9 @@ export class CnpjIndexService {
           for (const t of e.tiposDespesa) existing.tiposDespesa.add(t);
           if (e.ultimaDespesa && (!existing.ultimaDespesa || e.ultimaDespesa > existing.ultimaDespesa)) {
             existing.ultimaDespesa = e.ultimaDespesa;
+          }
+          if (e.primeiraDespesa && (!existing.primeiraDespesa || e.primeiraDespesa < existing.primeiraDespesa)) {
+            existing.primeiraDespesa = e.primeiraDespesa;
           }
         } else {
           merged.set(mergeKey, {
@@ -77,6 +91,7 @@ export class CnpjIndexService {
         quantidadeNotas: e.quantidadeNotas,
         tiposDespesa: [...e.tiposDespesa],
         ultimaDespesa: e.ultimaDespesa,
+        primeiraDespesa: e.primeiraDespesa,
       }))
       .sort((a, b) => b.totalGasto - a.totalGasto);
   }
@@ -139,6 +154,7 @@ export class CnpjIndexService {
             fonte: "senado",
             totalGasto: parseValorBr(row.VALOR_REEMBOLSADO ?? "0"),
             tipoDespesa: row.TIPO_DESPESA ?? "",
+            dataEmissao: dataIso(row.DATA ?? ""),
           });
         }
         logger.info(`CEAPS ${ano} indexado`);
@@ -267,6 +283,9 @@ export class CnpjIndexService {
       if (data.dataEmissao && (!existing.ultimaDespesa || data.dataEmissao > existing.ultimaDespesa)) {
         existing.ultimaDespesa = data.dataEmissao;
       }
+      if (data.dataEmissao && (!existing.primeiraDespesa || data.dataEmissao < existing.primeiraDespesa)) {
+        existing.primeiraDespesa = data.dataEmissao;
+      }
     } else {
       entries.push({
         nome: nomeNorm,
@@ -277,6 +296,7 @@ export class CnpjIndexService {
         quantidadeNotas: 1,
         tiposDespesa: new Set(data.tipoDespesa ? [data.tipoDespesa] : []),
         ultimaDespesa: data.dataEmissao,
+        primeiraDespesa: data.dataEmissao,
       });
     }
   }

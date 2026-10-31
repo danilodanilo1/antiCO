@@ -8,7 +8,7 @@ function formatarSinais(inv: InvestigacaoFornecedor): string {
   return inv.sinais
     .map(
       (s) =>
-        `- **${s.tipo}** (confiança: ${(s.confianca * 100).toFixed(0)}%)\n  ${s.descricao}${s.evidencia ? `\n  _Evidência: ${s.evidencia}_` : ""}`,
+        `- **${s.tipo}** [${s.categoria ?? "CONTEXTO"}]\n  ${s.descricao}${s.evidencia ? `\n  _Evidência: ${s.evidencia}_` : ""}${s.fonte ? `\n  _Fonte: ${s.url ? `[${s.fonte}](${s.url})` : s.fonte}_` : ""}`,
     )
     .join("\n");
 }
@@ -57,7 +57,8 @@ export function gerarRelatorioMarkdown(resultado: InvestigacaoPolitico): string 
   const data = new Date(resultado.geradoEm).toLocaleString("pt-BR");
 
   let md = `# Dossiê de Investigação — ${politico.nome}\n\n`;
-  md += `> Gerado em ${data} | antiCO v0.2 | Modo: regras determinísticas (sem IA)\n\n`;
+  md += `> Gerado em ${data} | antiCO v0.3 | Modo: regras determinísticas (sem IA)\n\n`;
+  md += `> **Indícios para investigação a partir de dados públicos. Não constitui prova de ilícito.** Confira cada fonte antes de qualquer conclusão.\n\n`;
   md += `## Resumo\n\n`;
   md += `- **Político:** ${politico.nome}\n`;
   md += `- **Cargo:** ${labelCargo(politico)}${politico.titulo ? ` (${politico.titulo})` : ""}\n`;
@@ -90,7 +91,9 @@ export function gerarRelatorioMarkdown(resultado: InvestigacaoPolitico): string 
   md += `1. **Câmara:** API de Dados Abertos (CEAP — despesas de deputados e mesa diretora)\n`;
   md += `2. **Senado:** CSV CEAPS + API Legislativa (despesas de senadores e mesa diretora)\n`;
   md += `3. **CNPJ:** BrasilAPI / Minha Receita (QSA, CNAE, situação cadastral)\n`;
-  md += `4. Verificação HTTP de sites corporativos\n\n`;
+  md += `4. Verificação HTTP de sites corporativos\n`;
+  md += `5. Pessoal de gabinete da Câmara (quando coletado)\n\n`;
+  md += `**Classificação:** FATO = dado oficial verificável; INDICIO = padrão suspeito que precisa de outros sinais; CONTEXTO = comum em empresas legítimas, não pontua. CRÍTICO exige 1 fato e 2 indícios; ALTO, 1 fato ou 3 indícios; MÉDIO, 2 indícios.\n\n`;
   md += `**Nota:** Os resultados indicam *indícios* para investigação jornalística ou jurídica, não constituem prova de ilícito.\n`;
 
   return md;
