@@ -1214,3 +1214,14 @@ body::before {
   color: #6b7280;
   margin: 0.25rem 0 0.75rem;
 }
+
+.aviso-parcial {
+  background: #fff7e6;
+  border: 1px solid #f3c56b;
+  color: #6b4a00;
+  border-radius: 8px;
+  padding: 0.75rem 1rem;
+  margin-bottom: 1rem;
+  font-size: 0.9rem;
+}
+.aviso-parcial ul { margin: 0.4rem 0 0; padding-left: 1.2rem; }

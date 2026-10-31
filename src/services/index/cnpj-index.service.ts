@@ -30,7 +30,7 @@ interface CnpjIndexData {
   index: Record<string, PagadorEntry[]>;
 }
 
-const INDEX_VERSION = 3;
+const INDEX_VERSION = 4;
 
 const ANOS_CEAPS = anosCeaps();
 const ANOS_CEAP = anosCeap();

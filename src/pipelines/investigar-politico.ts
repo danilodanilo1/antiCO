@@ -8,7 +8,8 @@ import { politicoRegistry, type CargoAlias } from "../services/sources/registry.
 import { ordenarPorRisco } from "../scoring/risk-engine.js";
 import type { Politico } from "../types/politico.js";
 import { labelCargo, labelFonte } from "../types/politico.js";
-import type { InvestigacaoPolitico } from "../types/investigacao.js";
+import type { InvestigacaoFornecedor, InvestigacaoPolitico } from "../types/investigacao.js";
+import type { AvisoFonte } from "../types/despesa.js";
 import { logger } from "../utils/logger.js";
 import { saveJson } from "../utils/files.js";
 import { investigarFornecedor } from "./investigar-fornecedor.js";
@@ -31,7 +32,9 @@ export async function investigarPolitico(options: InvestigarPoliticoOptions): Pr
   );
 
   const source = politicoRegistry.getSource(politico.fonte);
-  let despesas = await source.buscarDespesas(politico, options.ano);
+  const resultadoDespesas = await source.buscarDespesas(politico, options.ano);
+  let despesas = resultadoDespesas.despesas;
+  const avisos: AvisoFonte[] = [...resultadoDespesas.avisos];
 
   if (options.tipoDespesa) {
     despesas = filtrarDespesasPorTipo(despesas, options.tipoDespesa);
@@ -52,9 +55,20 @@ export async function investigarPolitico(options: InvestigarPoliticoOptions): Pr
   const limite = options.limiteFornecedores ?? fornecedores.length;
   const alvo = fornecedores.slice(0, limite);
 
-  const investigacoes = [];
+  // O tipo de despesa de cada fornecedor vem das próprias notas (o filtro digitado pode ser
+  // "aluguel de carro", que não serve para checar CNAE). Uma falha num fornecedor não derruba os outros.
+  const investigacoes: InvestigacaoFornecedor[] = [];
   for (const fornecedor of alvo) {
-    investigacoes.push(await investigarFornecedor(fornecedor, options.tipoDespesa));
+    try {
+      investigacoes.push(await investigarFornecedor(fornecedor));
+    } catch (error) {
+      logger.warn(`Falha ao investigar ${fornecedor.nomeFornecedor}: ${String(error)}`);
+      avisos.push({
+        fonte: `Fornecedor ${fornecedor.nomeFornecedor}`,
+        mensagem: "Não foi possível consultar os dados da empresa; aparece só com as despesas.",
+      });
+      investigacoes.push({ fornecedor, sinais: [], score: 0, classificacao: "BAIXO" });
+    }
   }
 
   return {
@@ -64,5 +78,6 @@ export async function investigarPolitico(options: InvestigarPoliticoOptions): Pr
     totalFornecedores: fornecedores.length,
     fornecedores: ordenarPorRisco(investigacoes),
     geradoEm: new Date().toISOString(),
+    avisos,
   };
 }

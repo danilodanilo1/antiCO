@@ -28,3 +28,16 @@ export interface TipoDespesa {
   nome: string;
   descricao?: string;
 }
+
+/** Uma fonte que falhou ou foi substituída durante a investigação. */
+export interface AvisoFonte {
+  fonte: string;
+  mensagem: string;
+  /** Fonte usada no lugar, quando houve alternativa. */
+  alternativa?: string;
+}
+
+export interface ResultadoDespesas {
+  despesas: Despesa[];
+  avisos: AvisoFonte[];
+}

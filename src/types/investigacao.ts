@@ -1,5 +1,5 @@
 import type { CnpjData } from "./cnpj.js";
-import type { FornecedorAgrupado } from "./despesa.js";
+import type { AvisoFonte, FornecedorAgrupado } from "./despesa.js";
 import type { Politico } from "./politico.js";
 
 export type SinalTipo =
@@ -61,6 +61,8 @@ export interface InvestigacaoPolitico {
   totalFornecedores: number;
   fornecedores: InvestigacaoFornecedor[];
   geradoEm: string;
+  /** Fontes que falharam ou foram substituídas; o resultado pode estar incompleto. */
+  avisos: AvisoFonte[];
 }
 
 /** @deprecated Use InvestigacaoPolitico */

@@ -78,8 +78,22 @@ export function csvToObjects(
   });
 }
 
+/**
+ * Converte valores monetários de arquivos públicos.
+ * - Com vírgula: formato brasileiro ("1.500,00" → 1500).
+ * - Só com ponto e 1 ou 2 casas depois dele: ponto decimal, como no CSV da Câmara ("165.65" → 165.65).
+ * - Só com ponto e 3 casas: separador de milhar ("1.500" → 1500).
+ */
 export function parseValorBr(valor: string): number {
-  const normalized = valor.replace(/\./g, "").replace(",", ".");
+  const v = valor.trim();
+  let normalized: string;
+  if (v.includes(",")) {
+    normalized = v.replace(/\./g, "").replace(",", ".");
+  } else if (/^-?\d+\.\d{1,2}$/.test(v)) {
+    normalized = v;
+  } else {
+    normalized = v.replace(/\./g, "");
+  }
   const n = Number(normalized);
   return Number.isFinite(n) ? n : 0;
 }

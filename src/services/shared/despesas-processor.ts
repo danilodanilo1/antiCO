@@ -2,9 +2,51 @@ import { config } from "../../config/env.js";
 import type { Despesa, FornecedorAgrupado } from "../../types/despesa.js";
 import { isCnpj, normalizeCnpj } from "../../utils/cnpj.js";
 
+function semAcento(texto: string): string {
+  return texto.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+}
+
+/**
+ * Palavras do dia a dia → radical usado nos nomes oficiais dos tipos de despesa da cota.
+ * Ex.: "aluguel de carro" vira ["locac", "veicul"], que casa com
+ * "LOCAÇÃO OU FRETAMENTO DE VEÍCULOS AUTOMOTORES".
+ */
+const SINONIMOS_DESPESA: Record<string, string> = {
+  aluguel: "locac", alugar: "locac", aluguer: "locac", locacao: "locac", locar: "locac",
+  carro: "veicul", carros: "veicul", automovel: "veicul", automoveis: "veicul", veiculo: "veicul", veiculos: "veicul",
+  fretamento: "fretamento", frete: "fretamento",
+  gasolina: "combustive", combustivel: "combustive", combustiveis: "combustive", abastecimento: "combustive",
+  passagem: "passage", passagens: "passage", aerea: "aere", aereas: "aere", aviao: "aere", voo: "aere",
+  divulgacao: "divulgac", propaganda: "divulgac", publicidade: "divulgac", marketing: "divulgac",
+  consultoria: "consultor", assessoria: "consultor",
+  hotel: "hosped", hospedagem: "hosped",
+  alimentacao: "aliment", comida: "aliment", refeicao: "aliment",
+  telefone: "telefon", telefonia: "telefon", celular: "telefon",
+  correio: "postai", correios: "postai",
+  escritorio: "escritorio", manutencao: "manutenc",
+};
+
+const PALAVRAS_VAZIAS = new Set(["de", "do", "da", "dos", "das", "e", "ou", "com", "para", "em", "o", "a"]);
+
+/** Radicais que precisam aparecer no tipo de despesa para o filtro casar. */
+export function radicaisFiltroDespesa(filtro: string): string[] {
+  return semAcento(filtro)
+    .split(/[^a-z0-9]+/)
+    .filter((p) => p && !PALAVRAS_VAZIAS.has(p))
+    .map((p) => SINONIMOS_DESPESA[p] ?? p);
+}
+
+/**
+ * Filtra por tipo de despesa aceitando o nome oficial ("LOCAÇÃO") ou palavras comuns
+ * ("aluguel de carro"). Sem diferença de acento ou caixa. Todos os radicais precisam aparecer.
+ */
 export function filtrarDespesasPorTipo(despesas: Despesa[], tipoFiltro: string): Despesa[] {
-  const filtro = tipoFiltro.toLowerCase();
-  return despesas.filter((d) => d.tipoDespesa.toLowerCase().includes(filtro));
+  const radicais = radicaisFiltroDespesa(tipoFiltro);
+  if (radicais.length === 0) return despesas;
+  return despesas.filter((d) => {
+    const tipo = semAcento(d.tipoDespesa);
+    return radicais.every((r) => tipo.includes(r));
+  });
 }
 
 export function agruparDespesasPorFornecedor(despesas: Despesa[]): FornecedorAgrupado[] {

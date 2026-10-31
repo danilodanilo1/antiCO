@@ -13,8 +13,23 @@ export function ResultsDashboard({ result, onInvestigarEmpresa }: Props) {
   const totalGasto = fornecedores.reduce((s, f) => s + f.fornecedor.totalGasto, 0);
   const criticos = fornecedores.filter((f) => f.classificacao === "CRITICO" || f.classificacao === "ALTO");
 
+  const avisos = result.avisos ?? [];
+
   return (
     <section className="results">
+      {avisos.length > 0 && (
+        <div className="aviso-parcial" role="status">
+          <strong>Resultado parcial.</strong> Algumas fontes falharam:
+          <ul>
+            {avisos.map((a, i) => (
+              <li key={`${a.fonte}-${i}`}>
+                <strong>{a.fonte}:</strong> {a.mensagem}
+                {a.alternativa ? ` Usado no lugar: ${a.alternativa}.` : ""}
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
       <div className="politico-card">
         <div className="politico-info">
           <span className="politico-fonte">{fonteLabel(politico.fonte)}</span>
