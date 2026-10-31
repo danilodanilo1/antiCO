@@ -148,6 +148,25 @@ describe("CamaraSource.buscarDespesas com falha parcial", () => {
   });
 });
 
+describe("CamaraSource.buscarDespesas com API vazia", () => {
+  const dataDir = mkdtempSync(join(tmpdir(), "antico-"));
+  mkdirSync(join(dataDir, "raw"), { recursive: true });
+  copyFileSync(join(__dirname, "fixtures", "ceap-2025.csv"), join(dataDir, "raw", "ceap-2025.csv"));
+  const politico = { id: "camara:999001", nome: "DEPUTADO FICTICIO", siglaPartido: "XX", siglaUf: "DF", cargo: "deputado_federal", fonte: "camara" } as Politico;
+  const clientVazio = { getAllPages: async () => [] } as unknown as CamaraClient;
+
+  it("API responde vazio mas o arquivo tem despesas: usa o arquivo e avisa", async () => {
+    const r = await new CamaraSource(clientVazio, dataDir).buscarDespesas(politico, 2025);
+    expect(r.despesas).toHaveLength(2);
+    expect(r.avisos[0]?.mensagem).toContain("sem nenhuma despesa");
+  });
+
+  it("API vazia e sem arquivo: resultado vazio, sem aviso", async () => {
+    const r = await new CamaraSource(clientVazio, dataDir).buscarDespesas(politico, 2019);
+    expect(r).toEqual({ despesas: [], avisos: [] });
+  });
+});
+
 describe("anosLegislaturaAtual", () => {
   it("2026 → 2023 a 2026; 2027 → só 2027", () => {
     expect(anosLegislaturaAtual(new Date("2026-10-31"))).toEqual([2023, 2024, 2025, 2026]);
