@@ -34,6 +34,15 @@ Outros comandos:
 
 Variáveis de ambiente opcionais estão em `.env.example`.
 
+## Quando a API da Câmara falha
+
+A API de Dados Abertos da Câmara devolve 502/504 com frequência. O antiCO:
+
+1. tenta de novo até 4 vezes (1,5 s, 3 s, 6 s), só em erros temporários (5xx, 429, tempo esgotado);
+2. busca as despesas ano a ano, da legislatura atual até hoje (ou só o ano pedido);
+3. se um ano continuar falhando, usa o arquivo da cota daquele ano já baixado em `data/raw/`;
+4. se nem isso existir, segue com os outros anos e mostra um aviso de **resultado parcial** no painel e no dossiê.
+
 ## Pessoal de gabinete
 
 O sinal mais forte do antiCO é **sócio do fornecedor com o mesmo nome completo de um servidor de gabinete**. Ele depende de `data/gabinete/servidores.csv`, gerado por:

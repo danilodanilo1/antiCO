@@ -1,7 +1,8 @@
 import { readFile } from "node:fs/promises";
 import { join } from "node:path";
 import { config } from "../../config/env.js";
-import type { Despesa } from "../../types/despesa.js";
+import type { Despesa, ResultadoDespesas } from "../../types/despesa.js";
+import { anosCeaps } from "../index/anos.js";
 import type { CargoPolitico, Politico } from "../../types/politico.js";
 import { formatPoliticoId } from "../../types/politico.js";
 import { csvToObjects, parseDataBr, parseValorBr } from "../../utils/csv.js";
@@ -151,23 +152,29 @@ export class SenadoSource implements PoliticoSource {
     });
   }
 
-  async buscarDespesas(politico: Politico, ano?: number): Promise<Despesa[]> {
+  async buscarDespesas(politico: Politico, ano?: number): Promise<ResultadoDespesas> {
     if (ano) {
-      const todas = await this.carregarCeaps(ano);
-      return this.filtrarPorPolitico(todas, politico);
+      try {
+        const todas = await this.carregarCeaps(ano);
+        return { despesas: this.filtrarPorPolitico(todas, politico), avisos: [] };
+      } catch (error) {
+        return {
+          despesas: [],
+          avisos: [{ fonte: `CEAPS Senado (${ano})`, mensagem: `Indisponível: ${String(error).slice(0, 80)}` }],
+        };
+      }
     }
 
-    const anos = Array.from({ length: 17 }, (_, i) => 2025 - i);
     const todas: Despesa[] = [];
-    for (const a of anos) {
+    for (const a of anosCeaps().reverse()) {
       try {
         const anoDespesas = await this.carregarCeaps(a);
         todas.push(...this.filtrarPorPolitico(anoDespesas, politico));
       } catch {
-        // ano indisponível
+        // ano indisponível (anos antigos ou o ano corrente ainda sem arquivo)
       }
     }
-    return todas;
+    return { despesas: todas, avisos: [] };
   }
 
   private filtrarPorPolitico(despesas: Despesa[], politico: Politico): Despesa[] {

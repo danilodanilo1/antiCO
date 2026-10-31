@@ -59,6 +59,14 @@ export function gerarRelatorioMarkdown(resultado: InvestigacaoPolitico): string 
   let md = `# Dossiê de Investigação — ${politico.nome}\n\n`;
   md += `> Gerado em ${data} | antiCO v0.3 | Modo: regras determinísticas (sem IA)\n\n`;
   md += `> **Indícios para investigação a partir de dados públicos. Não constitui prova de ilícito.** Confira cada fonte antes de qualquer conclusão.\n\n`;
+  if (resultado.avisos?.length) {
+    md += `## ⚠️ Resultado parcial\n\n`;
+    for (const a of resultado.avisos) {
+      md += `- **${a.fonte}:** ${a.mensagem}${a.alternativa ? ` Usado no lugar: ${a.alternativa}.` : ""}\n`;
+    }
+    md += "\n";
+  }
+
   md += `## Resumo\n\n`;
   md += `- **Político:** ${politico.nome}\n`;
   md += `- **Cargo:** ${labelCargo(politico)}${politico.titulo ? ` (${politico.titulo})` : ""}\n`;

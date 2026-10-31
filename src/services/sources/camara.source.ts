@@ -1,7 +1,8 @@
 import { config } from "../../config/env.js";
 import { CamaraClient } from "../camara/client.js";
 import { deputadosIndex } from "../camara/deputados-index.service.js";
-import type { Despesa } from "../../types/despesa.js";
+import type { AvisoFonte, Despesa, ResultadoDespesas } from "../../types/despesa.js";
+import { despesasCeapLocal } from "../camara/ceap-arquivo.js";
 import type { CargoPolitico, Politico } from "../../types/politico.js";
 import { formatPoliticoId } from "../../types/politico.js";
 import { logger } from "../../utils/logger.js";
@@ -81,7 +82,10 @@ function mapDespesa(d: DespesaApi): Despesa {
 export class CamaraSource implements PoliticoSource {
   readonly fonte = "camara" as const;
 
-  constructor(private readonly client = new CamaraClient()) {}
+  constructor(
+    private readonly client = new CamaraClient(),
+    private readonly dataDir = config.dataDir,
+  ) {}
 
   async buscarPorNome(nome: string): Promise<Politico[]> {
     const [indexResults, apiResults] = await Promise.all([
@@ -104,16 +108,67 @@ export class CamaraSource implements PoliticoSource {
     return response.dados.map((m) => mapDeputado(m, mapCargoMesa(m.titulo), m.titulo));
   }
 
-  async buscarDespesas(politico: Politico, ano?: number): Promise<Despesa[]> {
+  /**
+   * Busca ano a ano (consultas menores dão menos 504). Se a API falhar num ano mesmo depois
+   * das novas tentativas, usa o arquivo da cota já baixado em data/raw. Se também não houver
+   * arquivo, segue com os outros anos e registra um aviso, em vez de derrubar o resultado.
+   */
+  async buscarDespesas(politico: Politico, ano?: number): Promise<ResultadoDespesas> {
     const deputadoId = politico.id.replace("camara:", "");
+    const anos = ano ? [ano] : anosLegislaturaAtual();
+    const despesas: Despesa[] = [];
+    const avisos: AvisoFonte[] = [];
 
-    const params: Record<string, string | number> = {};
-    if (ano) params.ano = ano;
+    for (const a of anos) {
+      try {
+        const raw = await this.client.getAllPages<DespesaApi>(`/deputados/${deputadoId}/despesas`, { ano: a });
+        despesas.push(...raw.map(mapDespesa));
+        continue;
+      } catch (error) {
+        logger.warn(`Câmara API falhou para ${politico.nome} em ${a}: ${String(error)}`);
+        const local = await this.carregarLocal(deputadoId, a);
+        if (local) {
+          despesas.push(...local);
+          avisos.push({
+            fonte: `API da Câmara (${a})`,
+            mensagem: `Indisponível (${resumoErro(error)}).`,
+            alternativa: `Arquivo da cota parlamentar ${a} já baixado`,
+          });
+        } else {
+          avisos.push({
+            fonte: `API da Câmara (${a})`,
+            mensagem: `Indisponível (${resumoErro(error)}) e sem arquivo local da cota para esse ano. As despesas de ${a} ficaram de fora.`,
+          });
+        }
+      }
+    }
 
-    const raw = await this.client.getAllPages<DespesaApi>(`/deputados/${deputadoId}/despesas`, params);
-    logger.debug(`Câmara: ${raw.length} despesas para ${politico.nome}`);
-    return raw.map(mapDespesa);
+    logger.debug(`Câmara: ${despesas.length} despesas para ${politico.nome}`);
+    return { despesas, avisos };
   }
+
+  private async carregarLocal(deputadoId: string, ano: number): Promise<Despesa[] | null> {
+    try {
+      return await despesasCeapLocal(deputadoId, ano, this.dataDir);
+    } catch {
+      return null;
+    }
+  }
+}
+
+/** Anos da legislatura em curso até o ano atual (57ª: 2023–2026). */
+export function anosLegislaturaAtual(hoje = new Date()): number[] {
+  const ano = hoje.getFullYear();
+  const inicio = 2019 + Math.floor((ano - 2019) / 4) * 4;
+  return Array.from({ length: ano - inicio + 1 }, (_, i) => inicio + i);
+}
+
+function resumoErro(error: unknown): string {
+  const msg = error instanceof Error ? error.message : String(error);
+  const status = msg.match(/\b(5\d\d|429|408)\b/);
+  if (status) return `erro ${status[1]}`;
+  if (/abort|timeout/i.test(msg)) return "tempo esgotado";
+  return msg.slice(0, 80);
 }
 
 export function filtrarMelhorMatchCamara(resultados: Politico[], nome: string): Politico | null {

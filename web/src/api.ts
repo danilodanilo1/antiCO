@@ -143,6 +143,12 @@ export interface FornecedorInvestigacao {
   classificacao: "BAIXO" | "MEDIO" | "ALTO" | "CRITICO";
 }
 
+export interface AvisoFonte {
+  fonte: string;
+  mensagem: string;
+  alternativa?: string;
+}
+
 export interface InvestigacaoResult {
   politico: {
     id: string;
@@ -157,6 +163,7 @@ export interface InvestigacaoResult {
   totalDespesas: number;
   totalFornecedores: number;
   fornecedores: FornecedorInvestigacao[];
+  avisos?: AvisoFonte[];
   geradoEm: string;
   reportPath?: string;
 }
