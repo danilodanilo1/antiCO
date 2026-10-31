@@ -122,6 +122,19 @@ export class CamaraSource implements PoliticoSource {
     for (const a of anos) {
       try {
         const raw = await this.client.getAllPages<DespesaApi>(`/deputados/${deputadoId}/despesas`, { ano: a });
+        if (raw.length === 0) {
+          // Sob carga a API às vezes responde 200 com lista vazia. Confere no arquivo da cota.
+          const local = await this.carregarLocal(deputadoId, a);
+          if (local && local.length > 0) {
+            despesas.push(...local);
+            avisos.push({
+              fonte: `API da Câmara (${a})`,
+              mensagem: `Respondeu sem nenhuma despesa, mas o arquivo da cota tem ${local.length}.`,
+              alternativa: `Arquivo da cota parlamentar ${a} já baixado`,
+            });
+            continue;
+          }
+        }
         despesas.push(...raw.map(mapDespesa));
         continue;
       } catch (error) {
