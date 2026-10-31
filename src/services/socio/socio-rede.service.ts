@@ -7,7 +7,7 @@ import { normalizeCnpj, isCnpj, formatCnpj } from "../../utils/cnpj.js";
 import { ensureDir } from "../../utils/files.js";
 import { logger } from "../../utils/logger.js";
 import { normalizarNomePolitico } from "../shared/despesas-processor.js";
-import { assessoresIndex } from "../vinculos/assessores-index.service.js";
+import { gabineteIndex } from "../vinculos/gabinete-index.service.js";
 import { CnpjService } from "../brasilapi/cnpj.service.js";
 
 interface QsaSnapshot {
@@ -23,7 +23,7 @@ export class SocioRedeService {
     socios: SocioEnriquecido[];
     socioAlteradoRecente: boolean;
   }> {
-    await assessoresIndex.ensureLoaded();
+    await gabineteIndex.ensureLoaded();
     await this.salvarSnapshot(cnpjData);
 
     const snapshots = await this.listarSnapshots(cnpjData.cnpj);
@@ -31,7 +31,7 @@ export class SocioRedeService {
 
     const socios: SocioEnriquecido[] = [];
     for (const s of cnpjData.socios) {
-      const vinculosPoliticos = await assessoresIndex.buscarVinculos(s.nome);
+      const vinculosPoliticos = await gabineteIndex.buscarVinculos(s.nome);
       const outrasEmpresas = await this.buscarEmpresasPorSocio(s);
 
       socios.push({
@@ -48,7 +48,7 @@ export class SocioRedeService {
   }
 
   async buscarCnpjsPorEndereco(cep?: string, logradouro?: string): Promise<string[]> {
-    if (!cep && !logradouro) return [];
+    if (!cep || !logradouro) return [];
     const dir = join(config.dataDir, "snapshots", "cnpj");
     const matches: string[] = [];
 
@@ -58,12 +58,14 @@ export class SocioRedeService {
         if (!file.endsWith(".json")) continue;
         const raw = await readFile(join(dir, file), "utf-8");
         const snap = JSON.parse(raw) as { cnpj: string; cep?: string; logradouro?: string };
-        const cepMatch = cep && snap.cep?.replace(/\D/g, "") === cep.replace(/\D/g, "");
-        const logMatch =
-          logradouro &&
-          snap.logradouro &&
-          normalizarNomePolitico(snap.logradouro).includes(normalizarNomePolitico(logradouro).slice(0, 8));
-        if (cepMatch || logMatch) matches.push(snap.cnpj);
+        // Exige CEP igual E logradouro igual: CEP sozinho cobre quarteirões inteiros
+        // e os 8 primeiros caracteres do logradouro ("RUA DAS ") casavam com meio país.
+        const cepIgual = Boolean(cep) && snap.cep?.replace(/\D/g, "") === cep!.replace(/\D/g, "");
+        const logradouroIgual =
+          Boolean(logradouro) &&
+          Boolean(snap.logradouro) &&
+          normalizarNomePolitico(snap.logradouro!) === normalizarNomePolitico(logradouro!);
+        if (cepIgual && logradouroIgual) matches.push(snap.cnpj);
       }
     } catch {
       // sem snapshots

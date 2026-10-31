@@ -36,7 +36,9 @@ export function EmpresaDashboard({ result }: Props) {
           </p>
         </div>
         <div className="results-badges">
-          <span className={`badge badge-${cls}`}>Risco {result.classificacao}</span>
+          <span className={`badge badge-${cls}`} title="Indícios a verificar, não prova de ilícito">
+            Indícios: {result.classificacao}
+          </span>
           <span className={`badge badge-${plausCls}`}>
             Plausibilidade {result.plausibilidade.classificacao}
           </span>
@@ -61,6 +63,9 @@ export function EmpresaDashboard({ result }: Props) {
             ))}
           </div>
         )}
+        <p className="aviso-indicios">
+          Indícios para investigação a partir de dados públicos. Não constitui prova de ilícito; confira a fonte de cada sinal.
+        </p>
       </header>
 
       <div className="empresa-grid">
@@ -204,8 +209,22 @@ export function EmpresaDashboard({ result }: Props) {
                     {s.dataEntrada && <p>Entrada: {s.dataEntrada}</p>}
                     {s.vinculosPoliticos.length > 0 && (
                       <>
-                        <h6>Vínculos políticos</h6>
-                        <ul>{s.vinculosPoliticos.map((v) => <li key={v}>{v}</li>)}</ul>
+                        <h6>Mesmo nome de servidor(a) de gabinete</h6>
+                        <ul>
+                          {s.vinculosPoliticos.map((v) => (
+                            <li key={`${v.parlamentar}-${v.periodo ?? ""}`}>
+                              Gabinete de {v.parlamentar}
+                              {v.cargo ? ` · ${v.cargo}` : ""}
+                              {v.periodo ? ` · ${v.periodo}` : ""}
+                              {" · "}
+                              {v.url ? (
+                                <a href={v.url} target="_blank" rel="noreferrer noopener">{v.fonte}</a>
+                              ) : (
+                                v.fonte
+                              )}
+                            </li>
+                          ))}
+                        </ul>
                       </>
                     )}
                     {s.outrasEmpresas.length > 0 && (

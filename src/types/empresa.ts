@@ -10,7 +10,7 @@ export type SinalEmpresaTipo =
   | "EMPRESA_RECENTE"
   | "CLIENTES_POLITICOS_CONCENTRADOS"
   | "ENDERECO_COMPARTILHADO"
-  | "SOCIO_VINCULO_POLITICO"
+  | "SOCIO_SERVIDOR_GABINETE"
   | "SOCIO_ALTERADO_RECENTE"
   | "MULTIPLOS_PARLAMENTARES";
 
@@ -27,6 +27,7 @@ export interface PagadorPolitico {
   quantidadeNotas: number;
   tiposDespesa: string[];
   ultimaDespesa?: string;
+  primeiraDespesa?: string;
 }
 
 export interface NotaPagador {
@@ -67,12 +68,22 @@ export interface AstroturfingResult {
   detalhes: string[];
 }
 
+export interface VinculoGabinete {
+  nomeServidor: string;
+  parlamentar: string;
+  cargo?: string;
+  periodo?: string;
+  fonte: string;
+  url?: string;
+}
+
 export interface SocioEnriquecido {
   nome: string;
   qualificacao: string;
   dataEntrada?: string;
   cpfCnpj?: string;
-  vinculosPoliticos: string[];
+  /** Vínculos com gabinetes encontrados em listas oficiais de pessoal (nome completo idêntico). */
+  vinculosPoliticos: VinculoGabinete[];
   outrasEmpresas: string[];
 }
 

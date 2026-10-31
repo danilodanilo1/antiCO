@@ -8,11 +8,25 @@ export interface PoliticoResumo {
   fonte: string;
 }
 
+export type CategoriaSinal = "FATO" | "INDICIO" | "CONTEXTO";
+
 export interface SinalRisco {
   tipo: string;
+  categoria?: CategoriaSinal;
   confianca: number;
   descricao: string;
   evidencia?: string;
+  fonte?: string;
+  url?: string;
+}
+
+export interface VinculoGabinete {
+  nomeServidor: string;
+  parlamentar: string;
+  cargo?: string;
+  periodo?: string;
+  fonte: string;
+  url?: string;
 }
 
 export interface Socio {
@@ -23,7 +37,7 @@ export interface Socio {
 }
 
 export interface SocioEnriquecido extends Socio {
-  vinculosPoliticos: string[];
+  vinculosPoliticos: VinculoGabinete[];
   outrasEmpresas: string[];
 }
 

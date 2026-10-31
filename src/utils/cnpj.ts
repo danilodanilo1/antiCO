@@ -1,42 +1,26 @@
 export function normalizeCnpj(value: string): string {
-
   return value.replace(/\D/g, "");
-
 }
 
-
-
 export function formatCnpj(value: string): string {
-
   const digits = normalizeCnpj(value);
 
   if (digits.length !== 14) return value;
 
   return digits.replace(/^(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})$/, "$1.$2.$3/$4-$5");
-
 }
-
-
 
 export function isCnpj(value: string): boolean {
-
   return normalizeCnpj(value).length === 14;
-
 }
-
-
 
 /** Primeiros 8 dígitos — identificador da empresa (matriz + filiais). */
 
 export function cnpjRaiz(value: string): string {
-
   const digits = normalizeCnpj(value);
 
   return digits.length >= 8 ? digits.slice(0, 8) : digits;
-
 }
-
-
 
 /**
 
@@ -47,17 +31,13 @@ export function cnpjRaiz(value: string): string {
  */
 
 export function parseCnpjCeap(raw: string): string | null {
-
   const trimmed = raw.trim();
 
   if (!trimmed) return null;
 
-
-
   const structured = trimmed.match(/^(\d{2})\.(\d{3})\.(\d{3})\/(\d{1,4})-(\d{1,2})$/);
 
   if (structured) {
-
     const [, p1, p2, p3, filial, dv] = structured;
 
     const base8 = `${p1}${p2}${p3}`.slice(0, 8);
@@ -69,20 +49,14 @@ export function parseCnpjCeap(raw: string): string | null {
     const digits = `${base8}${filialPad}${dvPad}`;
 
     return digits.length === 14 ? digits : null;
-
   }
-
-
 
   const digits = normalizeCnpj(trimmed);
 
   if (digits.length === 14) return digits;
 
   return null;
-
 }
-
-
 
 /** Padrões de busca rápida em CSV (CEAP formata CNPJ com pontos). */
 export function cnpjCsvNeedles(value: string): string[] {
@@ -104,28 +78,25 @@ export function cnpjsMesmaRaiz(a: string, b: string): boolean {
   return cnpjRaiz(a) === cnpjRaiz(b);
 }
 
-export function cnpjMatchesQuery(query: string, indexed: string): boolean {
-
+/**
+ * Compara um CNPJ consultado com um CNPJ indexado.
+ * Por padrão compara raiz + filial (12 primeiros dígitos): o CEAP às vezes trunca o dígito
+ * verificador, mas matriz e filiais são estabelecimentos diferentes. Uma rede com 300 lojas
+ * não deve aparecer como "um fornecedor pago por 300 parlamentares".
+ * Use `incluirFiliais` para agrupar toda a empresa pela raiz (8 dígitos).
+ */
+export function cnpjMatchesQuery(query: string, indexed: string, incluirFiliais = false): boolean {
   const q = normalizeCnpj(query);
-
   const idx = normalizeCnpj(indexed);
-
   if (q === idx) return true;
-
-  if (q.length >= 8 && idx.length >= 8 && q.slice(0, 8) === idx.slice(0, 8)) return true;
-
-  return false;
-
+  if (q.length < 12 || idx.length < 12) return false;
+  if (incluirFiliais) return q.slice(0, 8) === idx.slice(0, 8);
+  return q.slice(0, 12) === idx.slice(0, 12);
 }
-
-
 
 /** @deprecated Use parseCnpjCeap para dados CEAP */
 
 export function normalizeCnpjFromFormatted(value: string): string | null {
-
   return parseCnpjCeap(value);
-
 }
-
 

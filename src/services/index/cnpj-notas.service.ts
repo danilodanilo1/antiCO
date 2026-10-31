@@ -9,10 +9,11 @@ import { csvToObjects, parseValorBr, parseDataBr } from "../../utils/csv.js";
 import { normalizeCnpj, isCnpj, parseCnpjCeap, cnpjMatchesQuery, csvContemCnpj } from "../../utils/cnpj.js";
 import { logger } from "../../utils/logger.js";
 import { normalizarNomePolitico } from "../shared/despesas-processor.js";
+import { anosCeap, anosCeaps, anosCeapDownload } from "./anos.js";
 
-const ANOS_CEAPS = Array.from({ length: 18 }, (_, i) => 2009 + i);
-const ANOS_CEAP = Array.from({ length: 18 }, (_, i) => 2008 + i);
-const ANOS_CEAP_DOWNLOAD = Array.from({ length: 6 }, (_, i) => 2020 + i);
+const ANOS_CEAPS = anosCeaps();
+const ANOS_CEAP = anosCeap();
+const ANOS_CEAP_DOWNLOAD = anosCeapDownload();
 
 function urlSenado(codDocumento: string): string | undefined {
   if (!codDocumento || codDocumento === "0") return undefined;

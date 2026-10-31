@@ -1,7 +1,8 @@
 import express from "express";
 import cors from "cors";
 import { readdir, readFile } from "node:fs/promises";
-import { join } from "node:path";
+import { existsSync } from "node:fs";
+import { join, resolve } from "node:path";
 import { investigarPolitico } from "../pipelines/investigar-politico.js";
 import { investigarEmpresa } from "../pipelines/investigar-empresa.js";
 import { gerarRelatorioMarkdown } from "../reports/markdown.js";
@@ -21,7 +22,7 @@ export function createApp() {
   app.use(express.json());
 
   app.get("/api/health", (_req, res) => {
-    res.json({ ok: true, version: "0.2.0" });
+    res.json({ ok: true, version: "0.3.0" });
   });
 
   app.get("/api/cargos", (_req, res) => {
@@ -203,6 +204,13 @@ export function createApp() {
       next(error);
     }
   });
+
+  // Em produção, a API também serve a interface compilada (npm run build:ui).
+  const uiDir = resolve(process.env.UI_DIR ?? "dist-ui");
+  if (existsSync(join(uiDir, "index.html"))) {
+    app.use(express.static(uiDir));
+    app.get(/^(?!\/api\/).*/, (_req, res) => res.sendFile(join(uiDir, "index.html")));
+  }
 
   app.use((error: unknown, _req: express.Request, res: express.Response, _next: express.NextFunction) => {
     const message = error instanceof Error ? error.message : String(error);
